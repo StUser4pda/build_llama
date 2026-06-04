@@ -75,15 +75,13 @@ jobs:
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
             -DCMAKE_CXX_FLAGS="/arch:AVX2 /fp:fast" `
             -DCMAKE_C_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
+            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
+            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DCMAKE_CUDA_FLAGS="--use_fast_math --expt-relaxed-constexpr -Xcompiler=/fp:fast" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF `
-            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/LTCG" `
-            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/LTCG"
+            -DLLAMA_CURL=OFF
 
       # ── 5. Build ──────────────────────────────────────────────────────
       - name: Build (AVX2 + CUDA)
@@ -160,15 +158,13 @@ jobs:
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
             -DCMAKE_CXX_FLAGS="/arch:AVX512 /fp:fast" `
             -DCMAKE_C_FLAGS="/arch:AVX512 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
+            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
+            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DCMAKE_CUDA_FLAGS="--use_fast_math --expt-relaxed-constexpr -Xcompiler=/fp:fast" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF `
-            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/LTCG" `
-            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/LTCG"
+            -DLLAMA_CURL=OFF
 
       - name: Build (AVX-512 + CUDA)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
@@ -223,14 +219,12 @@ jobs:
             -DGGML_CUDA=OFF `
             -DCMAKE_CXX_FLAGS="/arch:AVX2 /fp:fast" `
             -DCMAKE_C_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob3 /GL /DNDEBUG" `
+            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
+            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF `
-            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/LTCG" `
-            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/LTCG"
+            -DLLAMA_CURL=OFF
 
       - name: Build (CPU-only)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
