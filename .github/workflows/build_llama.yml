@@ -1,4 +1,4 @@
-name: Build llama.cpp (Windows x64 — RTX 2060 + i5-11400)
+name: Build llama.cpp (Windows x64 — RTX 20xx)
 
 on:
   push:
@@ -15,70 +15,10 @@ env:
   BUILD_DIR:        "build"
 
 jobs:
-  # ===========================================================================
-  # JOB 1 — AVX-512 · CPU-only
-  # ===========================================================================
-  build-avx512-cpu:
-    name: "llama.cpp · AVX-512 · CPU-only"
+
+  build-cuda:
+    name: "llama.cpp · All CPU Variants · CUDA sm_75"
     runs-on: windows-latest
-
-    steps:
-      - name: Checkout llama.cpp
-        uses: actions/checkout@v4
-        with:
-          repository: ggml-org/llama.cpp
-          ref: master
-          submodules: recursive
-
-      - name: Install Ninja
-        run: choco install ninja --no-progress -y
-
-      - name: Set up MSVC (x64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - name: Configure (AVX-512 · CPU-only)
-        run: |
-          cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "${{ env.CMAKE_GENERATOR }}" `
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DGGML_CUDA=OFF `
-            -DCMAKE_CXX_FLAGS="/arch:AVX512 /fp:fast" `
-            -DCMAKE_C_FLAGS="/arch:AVX512 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DLLAMA_BUILD_SERVER=ON `
-            -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=OFF `
-            -DLLAMA_CURL=OFF `
-            -DLLAMA_SSL=OFF
-
-      - name: Build (AVX-512 · CPU-only)
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
-
-      - name: Collect binaries
-        shell: pwsh
-        run: |
-          $out = "dist\llama-cpp-avx512-cpu-win-x64"
-          New-Item -ItemType Directory -Force $out | Out-Null
-          Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
-            Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
-            Copy-Item -Destination $out -Force
-
-      - name: Upload artefact (AVX-512 · CPU-only)
-        uses: actions/upload-artifact@v4
-        with:
-          name: llama-cpp-avx512-cpu-win-x64
-          path: dist\llama-cpp-avx512-cpu-win-x64\
-          retention-days: 30
-
-  # ===========================================================================
-  # JOB 2 — AVX-512 · CUDA sm_75 (RTX 2060)
-  # ===========================================================================
-  build-avx512-cuda:
-    name: "llama.cpp · AVX-512 · CUDA sm_75"
-    runs-on: windows-2022
 
     steps:
       - name: Checkout llama.cpp
@@ -104,15 +44,16 @@ jobs:
         with:
           arch: amd64
 
-      - name: Configure (AVX-512 · CUDA sm_75)
+      - name: Configure (CUDA sm_75)
         run: |
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DGGML_CUDA=ON `
+            -DGGML_CPU_ALL_VARIANTS=ON `
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
-            -DCMAKE_CXX_FLAGS="/arch:AVX512 /fp:fast" `
-            -DCMAKE_C_FLAGS="/arch:AVX512 /fp:fast" `
+            -DCMAKE_CXX_FLAGS="/fp:fast" `
+            -DCMAKE_C_FLAGS="/fp:fast" `
             -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DCMAKE_CUDA_FLAGS="--use_fast_math --expt-relaxed-constexpr -Xcompiler=/fp:fast" `
@@ -122,22 +63,22 @@ jobs:
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
-      - name: Build (AVX-512 · CUDA sm_75)
+      - name: Build (CUDA sm_75)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
         shell: pwsh
         run: |
-          $out = "dist\llama-cpp-avx512-cuda-sm75-win-x64"
+          $out = "dist\llama-cpp-cuda-sm75-win-x64"
           New-Item -ItemType Directory -Force $out | Out-Null
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
 
 
-      - name: Upload artefact (AVX-512 · CUDA sm_75)
+      - name: Upload artefact (CUDA sm_75)
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-avx512-cuda-sm75-win-x64
-          path: dist\llama-cpp-avx512-cuda-sm75-win-x64\
+          name: llama-cpp-cuda-sm75-win-x64
+          path: dist\llama-cpp-cuda-sm75-win-x64\
           retention-days: 30
