@@ -20,7 +20,7 @@ jobs:
   # ===========================================================================
   build-allvariants-cuda:
     name: "llama.cpp · All CPU Variants · CUDA sm_75"
-    runs-on: windows-latest
+    runs-on: windows-2022
 
     steps:
       - name: Checkout llama.cpp
