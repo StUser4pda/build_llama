@@ -1,10 +1,6 @@
-name: Build llama.cpp (Windows x64 — RTX 2060 + i5-11400)
+name: Build llama.cpp (Windows x64 — RTX 20xx + avx512vnni)
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 env:
@@ -16,10 +12,10 @@ env:
 
 jobs:
   # ===========================================================================
-  # All CPU Variants · CUDA sm_75 (RTX 2060)
+  # CPU AVX512_VNNI · CUDA sm_75 (RTX 20xx)
   # ===========================================================================
   build-allvariants-cuda:
-    name: "llama.cpp · All CPU Variants · CUDA sm_75"
+    name: "llama.cpp · CPU AVX512_VNNI · CUDA sm_75"
     runs-on: windows-2022
 
     steps:
@@ -79,21 +75,21 @@ jobs:
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
-      - name: Build (All CPU Variants · CUDA sm_75)
+      - name: Build (CPU AVX512_VNNI · CUDA sm_75)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
         shell: pwsh
         run: |
-          $out = "dist\llama-cpp-allvariants-cuda-sm75-win-x64"
+          $out = "dist\llama-cpp-avx512vnni-cuda-sm75-win-x64"
           New-Item -ItemType Directory -Force $out | Out-Null
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
 
-      - name: Upload artefact (All CPU Variants · CUDA sm_75)
+      - name: Upload artefact (CPU AVX512_VNNI · CUDA sm_75)
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-allvariants-cuda-sm75-win-x64
-          path: dist\llama-cpp-allvariants-cuda-sm75-win-x64\
+          name: llama-cpp-avx512vnni-cuda-sm75-win-x64
+          path: dist\llama-cpp-avx512vnni-cuda-sm75-win-x64\
           retention-days: 30
