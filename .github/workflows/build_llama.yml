@@ -20,7 +20,7 @@ jobs:
   # ===========================================================================
   build-avx512-cpu:
     name: "llama.cpp · AVX-512 · CPU-only"
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - name: Checkout llama.cpp
@@ -50,8 +50,9 @@ jobs:
             -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF
+            -DLLAMA_BUILD_EXAMPLES=OFF `
+            -DLLAMA_CURL=OFF `
+            -DLLAMA_SSL=OFF
 
       - name: Build (AVX-512 · CPU-only)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
@@ -117,8 +118,9 @@ jobs:
             -DCMAKE_CUDA_FLAGS="--use_fast_math --expt-relaxed-constexpr -Xcompiler=/fp:fast" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF
+            -DLLAMA_BUILD_EXAMPLES=OFF `
+            -DLLAMA_CURL=OFF `
+            -DLLAMA_SSL=OFF
 
       - name: Build (AVX-512 · CUDA sm_75)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
@@ -131,9 +133,7 @@ jobs:
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
-          $cudaBin = "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}\bin"
-          @("cublas64_12.dll","cublasLt64_12.dll","cudart64_12.dll") |
-            ForEach-Object { Copy-Item "$cudaBin\$_" $out -ErrorAction SilentlyContinue }
+
 
       - name: Upload artefact (AVX-512 · CUDA sm_75)
         uses: actions/upload-artifact@v4
