@@ -1,44 +1,28 @@
 name: Build llama.cpp (Windows x64 — RTX 2060 + i5-11400)
 
-# ---------------------------------------------------------------------------
-# Trigger options — adjust to your workflow
-# ---------------------------------------------------------------------------
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:        # allows manual runs from the Actions tab
-
-# ---------------------------------------------------------------------------
-# Hardware targets
-#   GPU : NVIDIA RTX 2060 — Turing, CUDA Compute Capability 7.5  (sm_75)
-#   CPU : Intel Core i5-11400 — Rocket Lake
-#           ISA extensions: SSE4.2, AVX, AVX2, AVX-512 (F/BW/VL/DQ)
-#           Note: some OEM boards ship with AVX-512 fused-off; the AVX2
-#           build is the safe default. The AVX-512 build is a bonus artifact.
-# ---------------------------------------------------------------------------
+  workflow_dispatch:
 
 env:
-  # ── CUDA ────────────────────────────────────────────────────────────────
-  CUDA_VERSION:      "12.6.3"          # match your driver (>=561.x for CUDA 12.6.3)
-  CUDA_ARCH:         "75"              # sm_75  = Turing (RTX 2060 / 2070 / 2080)
-  # ── CMake ───────────────────────────────────────────────────────────────
-  CMAKE_BUILD_TYPE:  "Release"
-  CMAKE_GENERATOR:   "Ninja"
-  # ── Output directory inside the runner ──────────────────────────────────
-  BUILD_DIR:         "build"
+  CUDA_VERSION:     "12.6.3"
+  CUDA_ARCH:        "75"
+  CMAKE_BUILD_TYPE: "Release"
+  CMAKE_GENERATOR:  "Ninja"
+  BUILD_DIR:        "build"
 
 jobs:
-  # =========================================================================
-  # JOB 1 — AVX2 + CUDA build  (recommended, runs everywhere on i5-11400)
-  # =========================================================================
-  build-avx2-cuda:
-    name: "llama.cpp · AVX2 · CUDA sm_75"
-    runs-on: windows-2022           # Windows Server 2022 (closest to Win 11 env)
+  # ===========================================================================
+  # JOB 1 — AVX-512 · CPU-only
+  # ===========================================================================
+  build-avx512-cpu:
+    name: "llama.cpp · AVX-512 · CPU-only"
+    runs-on: windows-2022
 
     steps:
-      # ── 1. Source ─────────────────────────────────────────────────────
       - name: Checkout llama.cpp
         uses: actions/checkout@v4
         with:
@@ -46,99 +30,69 @@ jobs:
           ref: master
           submodules: recursive
 
-      # ── 2. CUDA Toolkit ───────────────────────────────────────────────
+      - name: Install Ninja
+        run: choco install ninja --no-progress -y
+
+      - name: Set up MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Configure (AVX-512 · CPU-only)
+        run: |
+          cmake -S . -B ${{ env.BUILD_DIR }} `
+            -G "${{ env.CMAKE_GENERATOR }}" `
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DGGML_CUDA=OFF `
+            -DCMAKE_CXX_FLAGS="/arch:AVX512 /fp:fast" `
+            -DCMAKE_C_FLAGS="/arch:AVX512 /fp:fast" `
+            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
+            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
+            -DLLAMA_BUILD_SERVER=ON `
+            -DLLAMA_BUILD_TESTS=OFF `
+            -DLLAMA_BUILD_EXAMPLES=ON `
+            -DLLAMA_CURL=OFF
+
+      - name: Build (AVX-512 · CPU-only)
+        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
+
+      - name: Collect binaries
+        shell: pwsh
+        run: |
+          $out = "dist\llama-cpp-avx512-cpu-win-x64"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
+            Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
+            Copy-Item -Destination $out -Force
+
+      - name: Upload artefact (AVX-512 · CPU-only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: llama-cpp-avx512-cpu-win-x64
+          path: dist\llama-cpp-avx512-cpu-win-x64\
+          retention-days: 30
+
+  # ===========================================================================
+  # JOB 2 — AVX-512 · CUDA sm_75 (RTX 2060)
+  # ===========================================================================
+  build-avx512-cuda:
+    name: "llama.cpp · AVX-512 · CUDA sm_75"
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout llama.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: master
+          submodules: recursive
+
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@master
         id: cuda-toolkit
         with:
           cuda: ${{ env.CUDA_VERSION }}
           method: network
-          # Only install components we actually need — keeps runner cache lean
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
-
-      # ── 3. Build toolchain ────────────────────────────────────────────
-      - name: Install Ninja
-        run: choco install ninja --no-progress -y
-
-      - name: Set up MSVC (x64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      # ── 4. CMake configure ────────────────────────────────────────────
-      - name: Configure (AVX2 + CUDA sm_75)
-        run: |
-          cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "${{ env.CMAKE_GENERATOR }}" `
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DGGML_CUDA=ON `
-            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
-            -DCMAKE_CXX_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_C_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DCMAKE_CUDA_FLAGS="--use_fast_math --expt-relaxed-constexpr -Xcompiler=/fp:fast" `
-            -DLLAMA_BUILD_SERVER=ON `
-            -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF
-
-      # ── 5. Build ──────────────────────────────────────────────────────
-      - name: Build (AVX2 + CUDA)
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
-
-      # ── 6. Collect artefacts ──────────────────────────────────────────
-      - name: Collect binaries
-        shell: pwsh
-        run: |
-          $out = "dist\llama-cpp-avx2-cuda-sm75-win-x64"
-          New-Item -ItemType Directory -Force $out | Out-Null
-
-          # Copy all .exe and .dll from the build tree
-          Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
-            Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
-            Copy-Item -Destination $out -Force
-
-          # Grab CUDA runtime DLLs so the package is self-contained
-          $cudaBin = "${{ steps.cuda-toolkit.outputs.CUDA_PATH }}\bin"
-          @("cublas64_12.dll","cublasLt64_12.dll","cudart64_12.dll") |
-            ForEach-Object { Copy-Item "$cudaBin\$_" $out -ErrorAction SilentlyContinue }
-
-          Write-Host "Artefact contents:"
-          Get-ChildItem $out | Format-Table Name, Length
-
-      - name: Upload artefact (AVX2 + CUDA sm_75)
-        uses: actions/upload-artifact@v4
-        with:
-          name: llama-cpp-avx2-cuda-sm75-win-x64
-          path: dist\llama-cpp-avx2-cuda-sm75-win-x64\
-          retention-days: 30
-
-  # =========================================================================
-  # JOB 2 — AVX-512 + CUDA build  (bonus; requires AVX-512 enabled in BIOS)
-  #          i5-11400 supports AVX-512F/BW/VL/DQ when not fused-off by OEM.
-  #          This job simply continues-on-error so a fused-off board doesn't
-  #          block your CI pipeline.
-  # =========================================================================
-  build-avx512-cuda:
-    name: "llama.cpp · AVX-512 · CUDA sm_75"
-    runs-on: windows-2022
-    continue-on-error: true         # non-fatal if AVX-512 isn't available
-
-    steps:
-      - name: Checkout llama.cpp
-        uses: actions/checkout@v4
-        with:
-          repository: ggml-org/llama.cpp
-          ref: master
-          submodules: recursive
-
-      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
-        uses: Jimver/cuda-toolkit@v0.2.20
-        id: cuda-toolkit
-        with:
-          cuda: ${{ env.CUDA_VERSION }}
-          method: network
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
       - name: Install Ninja
@@ -149,7 +103,7 @@ jobs:
         with:
           arch: amd64
 
-      - name: Configure (AVX-512 + CUDA sm_75)
+      - name: Configure (AVX-512 · CUDA sm_75)
         run: |
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
@@ -166,7 +120,7 @@ jobs:
             -DLLAMA_BUILD_EXAMPLES=ON `
             -DLLAMA_CURL=OFF
 
-      - name: Build (AVX-512 + CUDA)
+      - name: Build (AVX-512 · CUDA sm_75)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
@@ -181,66 +135,9 @@ jobs:
           @("cublas64_12.dll","cublasLt64_12.dll","cudart64_12.dll") |
             ForEach-Object { Copy-Item "$cudaBin\$_" $out -ErrorAction SilentlyContinue }
 
-      - name: Upload artefact (AVX-512 + CUDA sm_75)
+      - name: Upload artefact (AVX-512 · CUDA sm_75)
         uses: actions/upload-artifact@v4
         with:
           name: llama-cpp-avx512-cuda-sm75-win-x64
           path: dist\llama-cpp-avx512-cuda-sm75-win-x64\
-          retention-days: 30
-
-  # =========================================================================
-  # JOB 3 — CPU-only build with AVX2  (fallback / offline use)
-  # =========================================================================
-  build-cpu-only:
-    name: "llama.cpp · AVX2 · CPU-only"
-    runs-on: windows-2022
-
-    steps:
-      - name: Checkout llama.cpp
-        uses: actions/checkout@v4
-        with:
-          repository: ggml-org/llama.cpp
-          ref: master
-          submodules: recursive
-
-      - name: Install Ninja
-        run: choco install ninja --no-progress -y
-
-      - name: Set up MSVC (x64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - name: Configure (CPU-only / AVX2)
-        run: |
-          cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "${{ env.CMAKE_GENERATOR }}" `
-            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
-            -DGGML_CUDA=OFF `
-            -DCMAKE_CXX_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_C_FLAGS="/arch:AVX2 /fp:fast" `
-            -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
-            -DLLAMA_BUILD_SERVER=ON `
-            -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=ON `
-            -DLLAMA_CURL=OFF
-
-      - name: Build (CPU-only)
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
-
-      - name: Collect binaries
-        shell: pwsh
-        run: |
-          $out = "dist\llama-cpp-avx2-cpu-win-x64"
-          New-Item -ItemType Directory -Force $out | Out-Null
-          Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
-            Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
-            Copy-Item -Destination $out -Force
-
-      - name: Upload artefact (CPU-only)
-        uses: actions/upload-artifact@v4
-        with:
-          name: llama-cpp-avx2-cpu-win-x64
-          path: dist\llama-cpp-avx2-cpu-win-x64\
           retention-days: 30
