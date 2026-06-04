@@ -15,8 +15,10 @@ env:
   BUILD_DIR:        "build"
 
 jobs:
-
-  build-cuda:
+  # ===========================================================================
+  # All CPU Variants · CUDA sm_75 (RTX 2060)
+  # ===========================================================================
+  build-allvariants-cuda:
     name: "llama.cpp · All CPU Variants · CUDA sm_75"
     runs-on: windows-latest
 
@@ -44,14 +46,23 @@ jobs:
         with:
           arch: amd64
 
-      - name: Configure (CUDA sm_75)
+      - name: Install OpenSSL (static) via vcpkg
+        run: |
+          vcpkg install openssl:x64-windows-static
+          echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static" >> $env:GITHUB_ENV
+
+      - name: Configure (All CPU Variants · CUDA sm_75)
         run: |
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
             -DGGML_CUDA=ON `
             -DGGML_CPU_ALL_VARIANTS=ON `
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
+            -DOPENSSL_USE_STATIC_LIBS=TRUE `
+            -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" `
             -DCMAKE_CXX_FLAGS="/fp:fast" `
             -DCMAKE_C_FLAGS="/fp:fast" `
             -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob2 /DNDEBUG" `
@@ -63,22 +74,21 @@ jobs:
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
-      - name: Build (CUDA sm_75)
+      - name: Build (All CPU Variants · CUDA sm_75)
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
         shell: pwsh
         run: |
-          $out = "dist\llama-cpp-cuda-sm75-win-x64"
+          $out = "dist\llama-cpp-allvariants-cuda-sm75-win-x64"
           New-Item -ItemType Directory -Force $out | Out-Null
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
 
-
-      - name: Upload artefact (CUDA sm_75)
+      - name: Upload artefact (All CPU Variants · CUDA sm_75)
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-cuda-sm75-win-x64
-          path: dist\llama-cpp-cuda-sm75-win-x64\
+          name: llama-cpp-allvariants-cuda-sm75-win-x64
+          path: dist\llama-cpp-allvariants-cuda-sm75-win-x64\
           retention-days: 30
