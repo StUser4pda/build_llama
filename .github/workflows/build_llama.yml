@@ -48,7 +48,7 @@ jobs:
 
       # ── 2. CUDA Toolkit ───────────────────────────────────────────────
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
-        uses: Jimver/cuda-toolkit@v0.2.17
+        uses: Jimver/cuda-toolkit@master
         id: cuda-toolkit
         with:
           cuda: ${{ env.CUDA_VERSION }}
