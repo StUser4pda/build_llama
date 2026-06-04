@@ -21,7 +21,7 @@ on:
 
 env:
   # ── CUDA ────────────────────────────────────────────────────────────────
-  CUDA_VERSION:      "12.6.0"          # match your driver (>=560.x for CUDA 12.6)
+  CUDA_VERSION:      "12.6.3"          # match your driver (>=561.x for CUDA 12.6.3)
   CUDA_ARCH:         "75"              # sm_75  = Turing (RTX 2060 / 2070 / 2080)
   # ── CMake ───────────────────────────────────────────────────────────────
   CMAKE_BUILD_TYPE:  "Release"
