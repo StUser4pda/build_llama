@@ -91,18 +91,18 @@ jobs:
       - name: Collect binaries
         shell: pwsh
         run: |
-          $out = "dist\llama-cpp-avx512vnni-cuda-sm75-win-x64"
+          $out = "dist\llama-cpp-avx512vnni-cuda-sm75-win-x64-clang"
           New-Item -ItemType Directory -Force $out | Out-Null
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
           # Copy OpenMP runtime
-          $omp = "C:\Program Files\LLVM\bin\libomp140.x86_64.dll"
-          if (Test-Path $omp) { Copy-Item $omp $out -Force }            
-
+          Get-ChildItem -Recurse "C:\Program Files\LLVM" -Filter "libomp140.x86_64.dll" -ErrorAction SilentlyContinue |
+            Copy-Item -Destination $out -Force
+            
       - name: Upload artefact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-avx512vnni-cuda-sm75-win-x64
-          path: dist\llama-cpp-avx512vnni-cuda-sm75-win-x64\
+          name: llama-cpp-avx512vnni-cuda-sm75-win-x64-clang
+          path: dist\llama-cpp-avx512vnni-cuda-sm75-win-x64-clang\
           retention-days: 30
