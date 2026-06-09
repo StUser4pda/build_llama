@@ -45,12 +45,7 @@ jobs:
       - name: Install LLVM/Clang
         run: choco install llvm --no-progress -y     
 
-      #- name: Install OpenSSL (static) via vcpkg
-      #  run: |
-      #    vcpkg install openssl:x64-windows-static
-      #    echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static" >> $env:GITHUB_ENV
-
-      - name: Configure (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Configure
         run: |
           $clang   = (Get-Command clang).Source
           $clangxx = (Get-Command clang++).Source        
@@ -59,6 +54,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DGGML_CUDA_CUB_3DOT2=ON `
             -DGGML_CUDA=ON `
             -DGGML_BACKEND_DL=OFF `
             -DGGML_SSE42=ON `
@@ -89,7 +85,7 @@ jobs:
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
-      - name: Build (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j1
 
       - name: Collect binaries
@@ -104,7 +100,7 @@ jobs:
           $omp = "C:\Program Files\LLVM\bin\libomp140.x86_64.dll"
           if (Test-Path $omp) { Copy-Item $omp $out -Force }            
 
-      - name: Upload artefact (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Upload artefact
         uses: actions/upload-artifact@v4
         with:
           name: llama-cpp-avx512vnni-cuda-sm75-win-x64
