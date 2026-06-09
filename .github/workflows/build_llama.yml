@@ -42,18 +42,14 @@ jobs:
         with:
           arch: amd64
 
-      #- name: Install OpenSSL (static) via vcpkg
-      #  run: |
-      #    vcpkg install openssl:x64-windows-static
-      #    echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static" >> $env:GITHUB_ENV
-
-      - name: Configure (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Configure
         run: |
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DGGML_CUDA_CUB_3DOT2=ON `
             -DGGML_CUDA=ON `
             -DGGML_BACKEND_DL=OFF `
             -DGGML_SSE42=ON `
@@ -82,7 +78,7 @@ jobs:
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
-      - name: Build (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Build
         run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
@@ -95,9 +91,9 @@ jobs:
             Copy-Item -Destination $out -Force
           # Find and copy any OpenMP runtime DLL
           Get-ChildItem -Recurse "C:\Program Files\LLVM" -Filter "libomp140.x86_64.dll" -ErrorAction SilentlyContinue |
-            Copy-Item -Destination $out -Force            
+            Copy-Item -Destination $out -Force
 
-      - name: Upload artefact (CPU AVX512_VNNI · CUDA sm_75)
+      - name: Upload artefact
         uses: actions/upload-artifact@v4
         with:
           name: llama-cpp-avx512vnni-cuda-sm75-win-x64
