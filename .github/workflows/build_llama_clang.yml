@@ -52,6 +52,8 @@ jobs:
 
       - name: Configure (CPU AVX512_VNNI · CUDA sm_75)
         run: |
+          $clang   = (Get-Command clang).Source
+          $clangxx = (Get-Command clang++).Source        
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
@@ -70,8 +72,8 @@ jobs:
             -DGGML_AVX512_VNNI=ON `
             -DGGML_NATIVE=OFF `
             -DGGML_LTO=ON `
-            -DCMAKE_C_COMPILER="clang"
-            -DCMAKE_CXX_COMPILER="clang++"
+            -DCMAKE_C_COMPILER="$clang" `
+            -DCMAKE_CXX_COMPILER="$clangxx" `
             -DCMAKE_C_FLAGS_RELEASE="-O3 -march=x86-64-v3 -mavx512vnni -ffast-math -fomit-frame-pointer" `
             -DCMAKE_CXX_FLAGS_RELEASE="-O3 -march=x86-64-v3 -mavx512vnni -ffast-math -fomit-frame-pointer" `
             -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-flto -Wl,/OPT:REF,/OPT:ICF" `
