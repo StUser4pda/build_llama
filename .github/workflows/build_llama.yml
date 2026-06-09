@@ -47,7 +47,7 @@ jobs:
           vcpkg install openssl:x64-windows-static
           echo "OPENSSL_ROOT_DIR=$env:VCPKG_INSTALLATION_ROOT\installed\x64-windows-static" >> $env:GITHUB_ENV
 
-      - name: Configure (All CPU Variants · CUDA sm_75)
+      - name: Configure (CPU AVX512_VNNI · CUDA sm_75)
         run: |
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
