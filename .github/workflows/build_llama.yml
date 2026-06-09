@@ -1,4 +1,4 @@
-name: Build llama.cpp (Windows x64 — RTX 20xx + avx512vnni)
+name: Build llama.cpp (Windows x64)
 
 on:
   workflow_dispatch:
@@ -70,8 +70,8 @@ jobs:
             -DGGML_SCHED_MAX_COPIES=1 `
             -DCMAKE_CXX_FLAGS_RELEASE="/O2 /Ob3 /DNDEBUG /GL /Oi /Ot /GS- /fp:fast" `
             -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob3 /DNDEBUG /GL /Oi /Ot /GS- /fp:fast" `
-            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/OPT:REF /OPT:ICF" `
-            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/OPT:REF /OPT:ICF" `
+            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/LTCG:incremental /OPT:REF /OPT:ICF" `
+            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/LTCG:incremental /OPT:REF /OPT:ICF" `
             -DCMAKE_CUDA_FLAGS_RELEASE="-O3 --use_fast_math -Xptxas=-O3,--warn-on-spills" `
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
             -DOPENSSL_USE_STATIC_LIBS=TRUE `
