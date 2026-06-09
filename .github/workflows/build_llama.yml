@@ -83,7 +83,7 @@ jobs:
             -DLLAMA_SSL=OFF
 
       - name: Build (CPU AVX512_VNNI · CUDA sm_75)
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j1
+        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --parallel
 
       - name: Collect binaries
         shell: pwsh
