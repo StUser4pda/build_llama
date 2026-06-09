@@ -99,6 +99,9 @@ jobs:
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
             Copy-Item -Destination $out -Force
+          # Copy OpenMP runtime
+          $omp = "C:\Program Files\LLVM\bin\libomp140.x86_64.dll"
+          if (Test-Path $omp) { Copy-Item $omp $out -Force }            
 
       - name: Upload artefact (CPU AVX512_VNNI · CUDA sm_75)
         uses: actions/upload-artifact@v4
