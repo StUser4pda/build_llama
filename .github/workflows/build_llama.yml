@@ -71,7 +71,7 @@ jobs:
             -DCMAKE_C_FLAGS_RELEASE="/O2 /Ob3 /DNDEBUG /GL /Oi /Ot /GS- /fp:fast" `
             -DCMAKE_EXE_LINKER_FLAGS_RELEASE="/LTCG /OPT:REF /OPT:ICF" `
             -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="/LTCG /OPT:REF /OPT:ICF" `
-            -DCMAKE_CUDA_FLAGS="-O3 --use_fast_math -Xptxas=-O3,--warn-on-spills" `            
+            -DCMAKE_CUDA_FLAGS="-O3 --use_fast_math -Xptxas=-O3,--warn-on-spills" `
             -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
             -DOPENSSL_USE_STATIC_LIBS=TRUE `
             -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" `
