@@ -26,10 +26,10 @@ jobs:
           ref: master
           submodules: recursive
           
-      - name: Merge PR DiffusionGemma #24423 into master
+      - name: Fetch PR DiffusionGemma #24423 into master
         run: |
-          git fetch https://github.com/ggml-org/llama.cpp pull/24423/head:pr-24423
-          git merge pr-24423 --no-edit
+          git fetch origin pull/24423/head
+          git merge FETCH_HEAD --no-edit
     
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@master
