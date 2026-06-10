@@ -28,9 +28,9 @@ jobs:
           
       - name: Merge PR DiffusionGemma #24423 into master
         run: |
-          git fetch origin pull/24423/head:pr-24423
-          git merge pr-24423 --no-edit --allow-unrelated-histories
-
+          git fetch https://github.com/ggml-org/llama.cpp pull/24423/head:pr-24423
+          git merge pr-24423 --no-edit
+    
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@master
         id: cuda-toolkit
