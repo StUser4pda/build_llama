@@ -1,4 +1,4 @@
-name: Build llama.cpp (CLANG)
+name: Build DiffusionGemma llama.cpp (CLANG)
 
 on:
   workflow_dispatch:
