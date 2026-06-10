@@ -19,18 +19,13 @@ jobs:
     runs-on: windows-2022
 
     steps:
-      - name: Checkout llama.cpp
-        uses: actions/checkout@v4
-        with:
-          repository: ggml-org/llama.cpp
-          ref: master
-          submodules: recursive
-          fetch-depth: 0
-          
-      - name: Fetch PR DiffusionGemma #24423 into master
+
+      - name: Checkout llama.cpp with PR #24423
         run: |
+          git clone https://github.com/ggml-org/llama.cpp --recurse-submodules
+          cd llama.cpp
           git fetch origin pull/24423/head
-          git merge FETCH_HEAD --no-edit
+          git checkout FETCH_HEAD
     
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@master
