@@ -42,9 +42,6 @@ jobs:
         with:
           arch: amd64
 
-      - name: Install LLVM/Clang
-        run: choco install llvm --no-progress -y     
-
       - name: Configure
         run: |
           $clang   = (Get-Command clang).Source
@@ -79,15 +76,17 @@ jobs:
             -DCMAKE_CUDA_HOST_COMPILER="cl" `
             -DOPENSSL_USE_STATIC_LIBS=TRUE `
             -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" `
-            -DLLAMA_BUILD_SERVER=ON `
+            -DLLAMA_BUILD_SERVER=OFF `
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=OFF `
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
       - name: Build
-        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli -- -j1
-
+        run: 
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j1
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli -- -j1
+          
       - name: Collect binaries
         shell: pwsh
         run: |
