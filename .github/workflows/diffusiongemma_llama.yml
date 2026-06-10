@@ -25,6 +25,7 @@ jobs:
           repository: ggml-org/llama.cpp
           ref: master
           submodules: recursive
+          fetch-depth: 0
           
       - name: Fetch PR DiffusionGemma #24423 into master
         run: |
