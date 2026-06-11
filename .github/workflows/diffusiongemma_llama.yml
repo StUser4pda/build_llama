@@ -74,7 +74,7 @@ jobs:
             -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=OFF `
+            -DLLAMA_BUILD_EXAMPLES=ON `
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
