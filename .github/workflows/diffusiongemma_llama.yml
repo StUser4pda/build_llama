@@ -7,7 +7,6 @@ env:
   CUDA_VERSION:     "12.6.3"
   CUDA_ARCH:        "75"
   CMAKE_BUILD_TYPE: "Release"
-  CMAKE_GENERATOR:  "Ninja"
   BUILD_DIR:        "build"
 
 jobs:
@@ -34,9 +33,6 @@ jobs:
           method: network
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
-      - name: Install Ninja
-        run: choco install ninja --no-progress -y
-
       - name: Set up MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
@@ -47,7 +43,7 @@ jobs:
           $clang   = (Get-Command clang).Source
           $clangxx = (Get-Command clang++).Source        
           cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "${{ env.CMAKE_GENERATOR }}" `
+            -G "Visual Studio 17 2022" -A x64 `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
@@ -84,8 +80,8 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j1
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli -- -j1
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- /m:1
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli -- /m:1
           
       - name: Collect binaries
         shell: pwsh
