@@ -43,7 +43,7 @@ jobs:
           $clang   = (Get-Command clang).Source
           $clangxx = (Get-Command clang++).Source        
           cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "Visual Studio 17 2022" -A x64 `
+            -G "NMake Makefiles" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
@@ -80,8 +80,8 @@ jobs:
 
       - name: Build
         run: |
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- /m:1
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli -- /m:1
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }}
+          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli
           
       - name: Collect binaries
         shell: pwsh
