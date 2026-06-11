@@ -22,8 +22,8 @@ jobs:
       - name: Checkout llama.cpp with PR #24423
         run: |
           git clone https://github.com/ggml-org/llama.cpp . --recurse-submodules
-          git fetch origin pull/24423/head
-          git merge --no-edit FETCH_HEAD
+          git fetch origin pull/24423/head:pr-24423
+          git checkout pr-24423
           
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
         uses: Jimver/cuda-toolkit@v0.2.35
