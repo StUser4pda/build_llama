@@ -1,12 +1,13 @@
-name: Build DiffusionGemma llama.cpp (CLANG)
+name: Build llama.cpp (CLANG)
 
 on:
   workflow_dispatch:
 
 env:
-  CUDA_VERSION:     "12.6.3"
+  CUDA_VERSION:     "13.3.0"
   CUDA_ARCH:        "75"
   CMAKE_BUILD_TYPE: "Release"
+  CMAKE_GENERATOR:  "Ninja"
   BUILD_DIR:        "build"
 
 jobs:
@@ -18,32 +19,38 @@ jobs:
     runs-on: windows-2022
 
     steps:
+      - name: Checkout llama.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: master
+          submodules: recursive
 
-      - name: Checkout llama.cpp with PR #24423
-        run: |
-          git clone https://github.com/ggml-org/llama.cpp . --recurse-submodules
-          git fetch origin pull/24423/head:pr-24423
-          git checkout pr-24423
-          
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
-        uses: Jimver/cuda-toolkit@v0.2.35
+        uses: Jimver/cuda-toolkit@master
         id: cuda-toolkit
         with:
           cuda: ${{ env.CUDA_VERSION }}
           method: network
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
+      - name: Install Ninja
+        run: choco install ninja --no-progress -y
+
       - name: Set up MSVC (x64)
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: amd64
+
+      - name: Install LLVM/Clang
+        run: choco install llvm --no-progress -y     
 
       - name: Configure
         run: |
           $clang   = (Get-Command clang).Source
           $clangxx = (Get-Command clang++).Source        
           cmake -S . -B ${{ env.BUILD_DIR }} `
-            -G "NMake Makefiles" `
+            -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
             -DVCPKG_TARGET_TRIPLET=x64-windows-static `
@@ -74,19 +81,17 @@ jobs:
             -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR" `
             -DLLAMA_BUILD_SERVER=ON `
             -DLLAMA_BUILD_TESTS=OFF `
-            -DLLAMA_BUILD_EXAMPLES=ON `
+            -DLLAMA_BUILD_EXAMPLES=OFF `
             -DLLAMA_CURL=OFF `
             -DLLAMA_SSL=OFF
 
       - name: Build
-        run: |
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }}
-          cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} --target llama-diffusion-cli
-          
+        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j1
+
       - name: Collect binaries
         shell: pwsh
         run: |
-          $out = "dist\llama-cpp-avx512vnni-cuda-sm75-win-x64-clang"
+          $out = "dist\llama-cpp-avx512vnni-cuda13-sm75-win-x64-clang"
           New-Item -ItemType Directory -Force $out | Out-Null
           Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
             Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
@@ -98,6 +103,6 @@ jobs:
       - name: Upload artefact
         uses: actions/upload-artifact@v4
         with:
-          name: llama-cpp-avx512vnni-cuda-sm75-win-x64-clang
-          path: dist\llama-cpp-avx512vnni-cuda-sm75-win-x64-clang\
+          name: llama-cpp-avx512vnni-cuda13-sm75-win-x64-clang
+          path: dist\llama-cpp-avx512vnni-cuda13-sm75-win-x64-clang\
           retention-days: 30
