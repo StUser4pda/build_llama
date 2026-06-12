@@ -1,4 +1,4 @@
-name: Build llama.cpp (CLANG)
+name: Build llama.cpp (CUDA13)
 
 on:
   workflow_dispatch:
