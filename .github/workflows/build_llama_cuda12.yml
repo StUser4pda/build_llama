@@ -43,7 +43,7 @@ jobs:
           arch: amd64
 
       - name: Install LLVM/Clang
-        run: choco install llvm --force --no-progress -y     
+        run: choco upgrade llvm --no-progress -y
 
       - name: Configure
         run: |
