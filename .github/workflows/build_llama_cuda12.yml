@@ -47,8 +47,8 @@ jobs:
 
       - name: Configure
         run: |
-          $clang   = (Get-Command clang).Source
-          $clangxx = (Get-Command clang++).Source        
+          $clang   = "C:\Program Files\LLVM\bin\clang.exe"
+          $clangxx = "C:\Program Files\LLVM\bin\clang++.exe"
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
