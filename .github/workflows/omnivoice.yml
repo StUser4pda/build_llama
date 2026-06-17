@@ -1,0 +1,100 @@
+name: Build omnivoice.cpp (CUDA12)
+
+on:
+  workflow_dispatch:
+
+env:
+  CUDA_VERSION:     "12.6.3"
+  CUDA_ARCH:        "75"
+  CMAKE_BUILD_TYPE: "Release"
+  CMAKE_GENERATOR:  "Ninja"
+  BUILD_DIR:        "build"
+
+jobs:
+  # ===========================================================================
+  # CPU AVX512_VNNI · CUDA sm_75 (RTX 20xx)
+  # ===========================================================================
+  build-allvariants-cuda:
+    name: "omnivoice.cpp · CPU AVX512_VNNI · CUDA sm_75"
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout omnivoice.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ServeurpersoCom/omnivoice.cpp
+          ref: master
+          submodules: recursive
+
+      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
+        uses: Jimver/cuda-toolkit@master
+        id: cuda-toolkit
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          method: network
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
+
+      - name: Install Ninja
+        run: choco upgrade ninja --no-progress -y
+
+      - name: Set up MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Install LLVM/Clang
+        run: choco upgrade llvm --no-progress -y
+
+      - name: Configure
+        run: |
+          $clang   = "C:\Program Files\LLVM\bin\clang.exe"
+          $clangxx = "C:\Program Files\LLVM\bin\clang++.exe"
+          cmake -S . -B ${{ env.BUILD_DIR }} `
+            -G "${{ env.CMAKE_GENERATOR }}" `
+            -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static `
+            -DGGML_CUDA_CUB_3DOT2=ON `
+            -DGGML_CUDA=ON `
+            -DGGML_BACKEND_DL=OFF `
+            -DGGML_SSE42=ON `
+            -DGGML_AVX=ON `
+            -DGGML_F16C=ON `
+            -DGGML_FMA=ON `
+            -DGGML_AVX2=ON `
+            -DGGML_BMI2=ON `
+            -DGGML_AVX512=ON `
+            -DGGML_AVX512_VBMI=ON `
+            -DGGML_AVX512_VNNI=ON `
+            -DGGML_NATIVE=OFF `
+            -DGGML_LTO=ON `
+            -DGGML_SCHED_MAX_COPIES=1 `
+            -DCMAKE_C_COMPILER="$clang" `
+            -DCMAKE_CXX_COMPILER="$clangxx" `
+            -DCMAKE_C_FLAGS_RELEASE="-O3 -fomit-frame-pointer -fno-math-errno -funsafe-math-optimizations -fassociative-math -freciprocal-math -fno-signed-zeros -fno-trapping-math" `
+            -DCMAKE_CXX_FLAGS_RELEASE="-O3 -fomit-frame-pointer -fno-math-errno -funsafe-math-optimizations -fassociative-math -freciprocal-math -fno-signed-zeros -fno-trapping-math" `
+            -DCMAKE_EXE_LINKER_FLAGS_RELEASE="-flto -Wl,/OPT:REF,/OPT:ICF" `
+            -DCMAKE_SHARED_LINKER_FLAGS_RELEASE="-flto -Wl,/OPT:REF,/OPT:ICF" `
+            -DCMAKE_CUDA_ARCHITECTURES="${{ env.CUDA_ARCH }}" `
+            -DCMAKE_CUDA_HOST_COMPILER="cl" `
+            -DOPENSSL_USE_STATIC_LIBS=TRUE `
+            -DOPENSSL_ROOT_DIR="$env:OPENSSL_ROOT_DIR"
+
+      - name: Build
+        run: cmake --build ${{ env.BUILD_DIR }} --config ${{ env.CMAKE_BUILD_TYPE }} -- -j2
+
+      - name: Collect binaries
+        shell: pwsh
+        run: |
+          $out = "dist\omnivoice-cpp-avx512vnni-cuda-sm75-win-x64-clang"
+          New-Item -ItemType Directory -Force $out | Out-Null
+          Get-ChildItem -Recurse ${{ env.BUILD_DIR }} -Include "*.exe","*.dll" |
+            Where-Object { $_.DirectoryName -notmatch "CMakeFiles" } |
+            Copy-Item -Destination $out -Force
+            
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnivoice-cpp-avx512vnni-cuda-sm75-win-x64-clang
+          path: dist\omnivoice-cpp-avx512vnni-cuda-sm75-win-x64-clang\
+          retention-days: 30
