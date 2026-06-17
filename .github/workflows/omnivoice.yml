@@ -34,21 +34,8 @@ jobs:
           method: network
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
-      - name: Install Ninja
-        run: choco upgrade ninja --no-progress -y
-
-      - name: Set up MSVC (x64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
-
-      - name: Install LLVM/Clang
-        run: choco upgrade llvm --no-progress -y
-
       - name: Configure
         run: |
-          $clang   = "C:\Program Files\LLVM\bin\clang.exe"
-          $clangxx = "C:\Program Files\LLVM\bin\clang++.exe"
           cmake -S . -B ${{ env.BUILD_DIR }} `
             -G "${{ env.CMAKE_GENERATOR }}" `
             -DCMAKE_BUILD_TYPE=${{ env.CMAKE_BUILD_TYPE }} `
@@ -69,8 +56,8 @@ jobs:
             -DGGML_NATIVE=OFF `
             -DGGML_LTO=ON `
             -DGGML_SCHED_MAX_COPIES=1 `
-            -DCMAKE_C_COMPILER="$clang" `
-            -DCMAKE_CXX_COMPILER="$clangxx" `
+            -DCMAKE_C_COMPILER="clang-cl" `
+            -DCMAKE_CXX_COMPILER="clang-cl" `
             -DCMAKE_LINKER=link.exe `
             -DCMAKE_C_FLAGS_RELEASE="-O3 -fomit-frame-pointer -fno-math-errno -funsafe-math-optimizations -fassociative-math -freciprocal-math -fno-signed-zeros -fno-trapping-math" `
             -DCMAKE_CXX_FLAGS_RELEASE="-O3 -fomit-frame-pointer -fno-math-errno -funsafe-math-optimizations -fassociative-math -freciprocal-math -fno-signed-zeros -fno-trapping-math" `
