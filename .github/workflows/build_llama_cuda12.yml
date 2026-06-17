@@ -83,6 +83,7 @@ jobs:
             -DLLAMA_BUILD_TESTS=OFF `
             -DLLAMA_BUILD_EXAMPLES=OFF `
             -DLLAMA_CURL=OFF `
+            -DGGML_OPENMP=OFF `
             -DLLAMA_SSL=OFF
 
       - name: Build
