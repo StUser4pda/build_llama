@@ -34,7 +34,7 @@ jobs:
 
       - name: Build
         continue-on-error: true
-        run: ./buildall.cmd
+        run: ./buildcuda.cmd
 
       - name: Upload artefact
         uses: actions/upload-artifact@v4
