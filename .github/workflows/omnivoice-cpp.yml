@@ -27,11 +27,17 @@ jobs:
           method: network
           sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
-      - name: Fix CUDA VS Integration
+      - name: Diagnose CUDA install
         shell: cmd
         run: |
-          xcopy /s /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\extras\visual_studio_integration\MSBuildExtensions\*" "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\"
-
+          echo === CUDA root ===
+          dir "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\"
+          echo === extras ===
+          dir "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\extras\" 2>nul || echo "No extras folder"
+          echo === cuda-toolkit action output ===
+          echo CUDA_PATH=%CUDA_PATH%
+          echo CUDA_PATH_V12_6=%CUDA_PATH_V12_6%
+          
       - name: Build
         continue-on-error: true
         run: ./buildall.cmd
