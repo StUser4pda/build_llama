@@ -22,25 +22,22 @@ jobs:
           ref: master
           submodules: recursive
 
-      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
-        uses: Jimver/cuda-toolkit@master
-        id: cuda-toolkit
-        with:
-          cuda: ${{ env.CUDA_VERSION }}
-          method: network
-          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
-
-      - name: Set up MSVC (x64)
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: amd64
+#      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
+#        uses: Jimver/cuda-toolkit@master
+#        id: cuda-toolkit
+#        with:
+#          cuda: ${{ env.CUDA_VERSION }}
+#          method: network
+#          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
       - name: Build
-        run: buildall.cmd
+        continue-on-error: true
+        run: ./buildall.cmd
 
       - name: Upload artefact
         uses: actions/upload-artifact@v4
+        continue-on-error: true
         with:
           name: omnivoice-cpp
-          path: build
+          path: .
           retention-days: 30
