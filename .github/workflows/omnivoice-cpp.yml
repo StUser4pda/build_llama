@@ -1,0 +1,46 @@
+name: Build omnivoice.cpp
+
+on:
+  workflow_dispatch:
+
+env:
+  CUDA_VERSION:     "12.6.3"
+
+jobs:
+  # ===========================================================================
+  # CPU AVX512_VNNI · CUDA sm_75 (RTX 20xx)
+  # ===========================================================================
+  build-allvariants-cuda:
+    name: "omnivoice.cpp build"
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout omnivoice.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/omnivoice.cpp
+          ref: master
+          submodules: recursive
+
+      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
+        uses: Jimver/cuda-toolkit@master
+        id: cuda-toolkit
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          method: network
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
+
+      - name: Set up MSVC (x64)
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64
+
+      - name: Build
+        run: buildall.cmd
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: omnivoice-cpp
+          path: build
+          retention-days: 30
