@@ -22,13 +22,13 @@ jobs:
           ref: master
           submodules: recursive
 
-#      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
-#        uses: Jimver/cuda-toolkit@master
-#        id: cuda-toolkit
-#        with:
-#          cuda: ${{ env.CUDA_VERSION }}
-#          method: network
-#          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
+      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
+        uses: Jimver/cuda-toolkit@master
+        id: cuda-toolkit
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          method: network
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust"]'
 
       - name: Build
         continue-on-error: true
