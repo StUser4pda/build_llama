@@ -16,7 +16,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 0xShug0/audio.cpp
-          ref: master
           submodules: recursive
 
       - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
