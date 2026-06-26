@@ -46,5 +46,5 @@ jobs:
         continue-on-error: true
         with:
           name: audio-cpp
-          path: build
+          path: build/bin/Release
           retention-days: 30
