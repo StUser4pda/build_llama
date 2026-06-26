@@ -1,0 +1,49 @@
+name: Build audio.cpp compat
+
+on:
+  workflow_dispatch:
+
+env:
+  CUDA_VERSION: "12.6.3"
+
+jobs:
+  build-allvariants-cuda:
+    name: "audio.cpp build"
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout audio.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: 0xShug0/audio.cpp
+          ref: master
+          submodules: recursive
+
+      - name: Install CUDA Toolkit ${{ env.CUDA_VERSION }}
+        uses: Jimver/cuda-toolkit@master
+        id: cuda-toolkit
+        with:
+          cuda: ${{ env.CUDA_VERSION }}
+          method: network
+          sub-packages: '["nvcc", "cudart", "cublas", "cublas_dev", "thrust", "visual_studio_integration"]'
+
+      - name: Fix CUDA VS Integration
+        shell: cmd
+        run: |
+          xcopy /s /y "C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v12.6\extras\visual_studio_integration\MSBuildExtensions\*" "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\MSBuild\Microsoft\VC\v170\BuildCustomizations\"          
+
+      - name: Build
+        continue-on-error: true
+        run: |
+          mkdir build
+          cd build
+          cmake .. -DGGML_CUDA=ON -DGGML_LTO=ON
+          cmake --build . --config Release --target audiocpp_cli --target audiocpp_server -j 2
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        continue-on-error: true
+        with:
+          name: audio-cpp
+          path: build/Release
+          retention-days: 30
