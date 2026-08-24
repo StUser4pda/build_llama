@@ -51,73 +51,73 @@ jobs:
           $path = "ggml/src/CMakeLists.txt"
           $content = Get-Content $path -Raw
 
-          $replacements = @(
-            @{
-              Old = @'
-          set(GGML_OPENMP_LLVM_VERSION "20.1.8")
-          string(REGEX MATCH "^[0-9]+" GGML_OPENMP_LLVM_VERSION_MAJOR "${GGML_OPENMP_LLVM_VERSION}")
-          string(REGEX MATCH "^[0-9]+" GGML_OPENMP_COMPILER_VERSION_MAJOR "${CMAKE_C_COMPILER_VERSION}")
-          if (NOT GGML_OPENMP_COMPILER_VERSION_MAJOR STREQUAL GGML_OPENMP_LLVM_VERSION_MAJOR)
-              message(FATAL_ERROR "LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} requires Clang ${GGML_OPENMP_LLVM_VERSION_MAJOR}.x")
-          endif()
-          '@
-              New = @'
-          set(GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}")
-          message(STATUS "GGML_OPENMP_FETCH: using LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} to match installed Clang (hash check skipped, CI patch)")
-          '@
-            },
-            @{
-              Old = '        set(GGML_OPENMP_INSTALLER_SHA256 "3197846a2b19063687dd56e93e34cd941e3548d907f23a6131571321bdf9fe7b")'
-              New = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
-            },
-            @{
-              Old = '        set(GGML_OPENMP_INSTALLER_SHA256 "7c4ac97eb2ae6b960ca5f9caf3ff6124c8d2a18cc07a7840a4d2ea15537bad8e")'
-              New = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
-            },
-            @{
-              Old = @'
-              file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"
-                  EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"
-                  SHOW_PROGRESS
-                  STATUS GGML_OPENMP_DOWNLOAD_STATUS)
-           '@
-              New = @'
-              file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"
-                  SHOW_PROGRESS
-                  STATUS GGML_OPENMP_DOWNLOAD_STATUS)
-           '@
-            },
-            @{
-              Old = @'
-          # The NSIS installer embeds LLVM's general license in its UI but does not install it as a file; use OpenMP's license to include its additional notices.
-          if (EXISTS "${GGML_OPENMP_LICENSE}")
-              file(SHA256 "${GGML_OPENMP_LICENSE}" GGML_OPENMP_LICENSE_ACTUAL_SHA256)
-          endif()
-          if (NOT GGML_OPENMP_LICENSE_ACTUAL_SHA256 STREQUAL GGML_OPENMP_LICENSE_SHA256)
-              file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}"
-                  EXPECTED_HASH "SHA256=${GGML_OPENMP_LICENSE_SHA256}")
-          endif()
-          '@
-              New = @'
-          # The NSIS installer embeds LLVM's general license in its UI but does not install it as a file; use OpenMP's license to include its additional notices.
-          if (NOT EXISTS "${GGML_OPENMP_LICENSE}")
-              file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}")
-          endif()
-          '@
-            }
+          $old1 = @(
+            '    set(GGML_OPENMP_LLVM_VERSION "20.1.8")',
+            '    string(REGEX MATCH "^[0-9]+" GGML_OPENMP_LLVM_VERSION_MAJOR "${GGML_OPENMP_LLVM_VERSION}")',
+            '    string(REGEX MATCH "^[0-9]+" GGML_OPENMP_COMPILER_VERSION_MAJOR "${CMAKE_C_COMPILER_VERSION}")',
+            '    if (NOT GGML_OPENMP_COMPILER_VERSION_MAJOR STREQUAL GGML_OPENMP_LLVM_VERSION_MAJOR)',
+            '        message(FATAL_ERROR "LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} requires Clang ${GGML_OPENMP_LLVM_VERSION_MAJOR}.x")',
+            '    endif()'
+          ) -join "`n"
+          $new1 = @(
+            '    set(GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}")',
+            '    message(STATUS "GGML_OPENMP_FETCH: using LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} to match installed Clang (hash check skipped, CI patch)")'
+          ) -join "`n"
+
+          $old2 = '        set(GGML_OPENMP_INSTALLER_SHA256 "3197846a2b19063687dd56e93e34cd941e3548d907f23a6131571321bdf9fe7b")'
+          $new2 = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
+
+          $old3 = '        set(GGML_OPENMP_INSTALLER_SHA256 "7c4ac97eb2ae6b960ca5f9caf3ff6124c8d2a18cc07a7840a4d2ea15537bad8e")'
+          $new3 = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
+
+          $old4 = @(
+            '        file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"',
+            '            EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"',
+            '            SHOW_PROGRESS',
+            '            STATUS GGML_OPENMP_DOWNLOAD_STATUS)'
+          ) -join "`n"
+          $new4 = @(
+            '        file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"',
+            '            SHOW_PROGRESS',
+            '            STATUS GGML_OPENMP_DOWNLOAD_STATUS)'
+          ) -join "`n"
+
+          $old5 = @(
+            '    # The NSIS installer embeds LLVM''s general license in its UI but does not install it as a file; use OpenMP''s license to include its additional notices.',
+            '    if (EXISTS "${GGML_OPENMP_LICENSE}")',
+            '        file(SHA256 "${GGML_OPENMP_LICENSE}" GGML_OPENMP_LICENSE_ACTUAL_SHA256)',
+            '    endif()',
+            '    if (NOT GGML_OPENMP_LICENSE_ACTUAL_SHA256 STREQUAL GGML_OPENMP_LICENSE_SHA256)',
+            '        file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}"',
+            '            EXPECTED_HASH "SHA256=${GGML_OPENMP_LICENSE_SHA256}")',
+            '    endif()'
+          ) -join "`n"
+          $new5 = @(
+            '    # The NSIS installer embeds LLVM''s general license in its UI but does not install it as a file; use OpenMP''s license to include its additional notices.',
+            '    if (NOT EXISTS "${GGML_OPENMP_LICENSE}")',
+            '        file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}")',
+            '    endif()'
+          ) -join "`n"
+
+          $pairs = @(
+            @{ Old = $old1; New = $new1 },
+            @{ Old = $old2; New = $new2 },
+            @{ Old = $old3; New = $new3 },
+            @{ Old = $old4; New = $new4 },
+            @{ Old = $old5; New = $new5 }
           )
 
-          foreach ($r in $replacements) {
-            if ($content -notlike "*$($r.Old)*") {
+          foreach ($p in $pairs) {
+            if ($content -notlike "*$($p.Old)*") {
               Write-Error "Patch target not found in ggml/src/CMakeLists.txt — upstream file has likely changed. Aborting."
               exit 1
             }
-            $content = $content.Replace($r.Old, $r.New)
+            $content = $content.Replace($p.Old, $p.New)
           }
 
           Set-Content $path -NoNewline -Value $content
           Write-Host "Patched GGML_OPENMP_FETCH to track installed Clang version dynamically."
-          
+
       - name: Configure
         run: |
           $clang   = "C:\Program Files\LLVM\bin\clang.exe"
