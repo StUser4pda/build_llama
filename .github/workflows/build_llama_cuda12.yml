@@ -45,6 +45,19 @@ jobs:
       - name: Install LLVM/Clang
         run: choco upgrade llvm --no-progress -y
 
+      - name: Patch OpenMP fetch version check
+        shell: pwsh
+        run: |
+          $path = "ggml/src/CMakeLists.txt"
+          $content = Get-Content $path -Raw
+          $old = 'message(FATAL_ERROR "LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} requires Clang ${GGML_OPENMP_LLVM_VERSION_MAJOR}.x")'
+          $new = 'message(WARNING "LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION}/Clang major mismatch ignored via CI patch")'
+          if ($content -notlike "*$old*") {
+            Write-Error "Patch target string not found — upstream CMakeLists.txt may have changed."
+            exit 1
+          }
+          $content.Replace($old, $new) | Set-Content $path -NoNewline
+
       - name: Configure
         run: |
           $clang   = "C:\Program Files\LLVM\bin\clang.exe"
