@@ -45,78 +45,38 @@ jobs:
       - name: Install LLVM/Clang
         run: choco upgrade llvm --no-progress -y
 
-      - name: Patch OpenMP fetch to track installed Clang version dynamically (no hash pinning)
-        shell: pwsh
+      - name: Patch OpenMP fetch to track installed Clang version dynamically
+        shell: bash
         run: |
-          $path = "ggml/src/CMakeLists.txt"
-          $content = Get-Content $path -Raw
+          set -euo pipefail
+          FILE="ggml/src/CMakeLists.txt"
 
-          $old1 = @(
-            '    set(GGML_OPENMP_LLVM_VERSION "20.1.8")',
-            '    string(REGEX MATCH "^[0-9]+" GGML_OPENMP_LLVM_VERSION_MAJOR "${GGML_OPENMP_LLVM_VERSION}")',
-            '    string(REGEX MATCH "^[0-9]+" GGML_OPENMP_COMPILER_VERSION_MAJOR "${CMAKE_C_COMPILER_VERSION}")',
-            '    if (NOT GGML_OPENMP_COMPILER_VERSION_MAJOR STREQUAL GGML_OPENMP_LLVM_VERSION_MAJOR)',
-            '        message(FATAL_ERROR "LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} requires Clang ${GGML_OPENMP_LLVM_VERSION_MAJOR}.x")',
-            '    endif()'
-          ) -join "`n"
-          $new1 = @(
-            '    set(GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}")',
-            '    message(STATUS "GGML_OPENMP_FETCH: using LLVM OpenMP ${GGML_OPENMP_LLVM_VERSION} to match installed Clang (hash check skipped, CI patch)")'
-          ) -join "`n"
+          # Windows checkout can leave CRLF; normalize to LF (CMake doesn't care either way).
+          sed -i 's/\r$//' "$FILE"
 
-          $old2 = '        set(GGML_OPENMP_INSTALLER_SHA256 "3197846a2b19063687dd56e93e34cd941e3548d907f23a6131571321bdf9fe7b")'
-          $new2 = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
+          # 1. Make the pinned OpenMP version track whatever Clang CMake actually found —
+          #    matches the *pattern*, not today's literal "20.1.8", so it survives version bumps.
+          #    This also makes the FATAL_ERROR major-version check below a no-op automatically,
+          #    since both sides of that comparison now derive from the same value.
+          sed -i -E 's/set\(GGML_OPENMP_LLVM_VERSION "[^"]*"\)/set(GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}")/' "$FILE"
 
-          $old3 = '        set(GGML_OPENMP_INSTALLER_SHA256 "7c4ac97eb2ae6b960ca5f9caf3ff6124c8d2a18cc07a7840a4d2ea15537bad8e")'
-          $new3 = '        set(GGML_OPENMP_INSTALLER_SHA256 "")'
+          # 2. Drop hash verification on the installer download. Targets the variable *name*,
+          #    not its value, so it doesn't care what hash upstream currently has pinned.
+          sed -i '/EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"/d' "$FILE"
 
-          $old4 = @(
-            '        file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"',
-            '            EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"',
-            '            SHOW_PROGRESS',
-            '            STATUS GGML_OPENMP_DOWNLOAD_STATUS)'
-          ) -join "`n"
-          $new4 = @(
-            '        file(DOWNLOAD "${GGML_OPENMP_INSTALLER_URL}" "${GGML_OPENMP_INSTALLER}"',
-            '            SHOW_PROGRESS',
-            '            STATUS GGML_OPENMP_DOWNLOAD_STATUS)'
-          ) -join "`n"
+          # 3. Same for the license download — this one ends the file(DOWNLOAD ...) call,
+          #    so keep the closing paren and only drop the EXPECTED_HASH argument.
+          sed -i -E 's/[[:space:]]*EXPECTED_HASH "SHA256=\$\{GGML_OPENMP_LICENSE_SHA256\}"\)/)/' "$FILE"
 
-          $old5 = @(
-            '    # The NSIS installer embeds LLVM''s general license in its UI but does not install it as a file; use OpenMP''s license to include its additional notices.',
-            '    if (EXISTS "${GGML_OPENMP_LICENSE}")',
-            '        file(SHA256 "${GGML_OPENMP_LICENSE}" GGML_OPENMP_LICENSE_ACTUAL_SHA256)',
-            '    endif()',
-            '    if (NOT GGML_OPENMP_LICENSE_ACTUAL_SHA256 STREQUAL GGML_OPENMP_LICENSE_SHA256)',
-            '        file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}"',
-            '            EXPECTED_HASH "SHA256=${GGML_OPENMP_LICENSE_SHA256}")',
-            '    endif()'
-          ) -join "`n"
-          $new5 = @(
-            '    # The NSIS installer embeds LLVM''s general license in its UI but does not install it as a file; use OpenMP''s license to include its additional notices.',
-            '    if (NOT EXISTS "${GGML_OPENMP_LICENSE}")',
-            '        file(DOWNLOAD "https://raw.githubusercontent.com/llvm/llvm-project/llvmorg-${GGML_OPENMP_LLVM_VERSION}/openmp/LICENSE.TXT" "${GGML_OPENMP_LICENSE}")',
-            '    endif()'
-          ) -join "`n"
+          # Fail loudly (not silently) if the structural anchors we rely on have disappeared.
+          grep -q 'GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}"' "$FILE" \
+            || { echo "::error::patch 1 (version) did not apply - review ggml/src/CMakeLists.txt upstream"; exit 1; }
+          ! grep -q 'EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"' "$FILE" \
+            || { echo "::error::patch 2 (installer hash) did not apply"; exit 1; }
+          ! grep -q 'EXPECTED_HASH "SHA256=${GGML_OPENMP_LICENSE_SHA256}"' "$FILE" \
+            || { echo "::error::patch 3 (license hash) did not apply"; exit 1; }
 
-          $pairs = @(
-            @{ Old = $old1; New = $new1 },
-            @{ Old = $old2; New = $new2 },
-            @{ Old = $old3; New = $new3 },
-            @{ Old = $old4; New = $new4 },
-            @{ Old = $old5; New = $new5 }
-          )
-
-          foreach ($p in $pairs) {
-            if ($content -notlike "*$($p.Old)*") {
-              Write-Error "Patch target not found in ggml/src/CMakeLists.txt — upstream file has likely changed. Aborting."
-              exit 1
-            }
-            $content = $content.Replace($p.Old, $p.New)
-          }
-
-          Set-Content $path -NoNewline -Value $content
-          Write-Host "Patched GGML_OPENMP_FETCH to track installed Clang version dynamically."
+          echo "Patched ggml/src/CMakeLists.txt successfully."
 
       - name: Configure
         run: |
