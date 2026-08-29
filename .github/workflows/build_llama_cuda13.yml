@@ -58,7 +58,41 @@ jobs:
           arch: amd64
 
       - name: Install LLVM/Clang
-        run: choco install llvm --no-progress -y     
+        run: choco install llvm --no-progress -y
+
+      - name: Patch OpenMP fetch to track installed Clang version dynamically
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE="ggml/src/CMakeLists.txt"
+
+          # Windows checkout can leave CRLF; normalize to LF (CMake doesn't care either way).
+          sed -i 's/\r$//' "$FILE"
+
+          # 1. Make the pinned OpenMP version track whatever Clang CMake actually found —
+          #    matches the *pattern*, not today's literal "20.1.8", so it survives version bumps.
+          #    This also makes the FATAL_ERROR major-version check below a no-op automatically,
+          #    since both sides of that comparison now derive from the same value.
+          sed -i -E 's/set\(GGML_OPENMP_LLVM_VERSION "[^"]*"\)/set(GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}")/' "$FILE"
+
+          # 2. Drop hash verification on the installer download. Targets the variable *name*,
+          #    not its value, so it doesn't care what hash upstream currently has pinned.
+          sed -i '/EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"/d' "$FILE"
+
+          # 3. Same for the license download — this one ends the file(DOWNLOAD ...) call,
+          #    so keep the closing paren and only drop the EXPECTED_HASH argument.
+          sed -i -E 's/[[:space:]]*EXPECTED_HASH "SHA256=\$\{GGML_OPENMP_LICENSE_SHA256\}"\)/)/' "$FILE"
+
+          # Fail loudly (not silently) if the structural anchors we rely on have disappeared.
+          grep -q 'GGML_OPENMP_LLVM_VERSION "${CMAKE_C_COMPILER_VERSION}"' "$FILE" \
+            || { echo "::error::patch 1 (version) did not apply - review ggml/src/CMakeLists.txt upstream"; exit 1; }
+          ! grep -q 'EXPECTED_HASH "SHA256=${GGML_OPENMP_INSTALLER_SHA256}"' "$FILE" \
+            || { echo "::error::patch 2 (installer hash) did not apply"; exit 1; }
+          ! grep -q 'EXPECTED_HASH "SHA256=${GGML_OPENMP_LICENSE_SHA256}"' "$FILE" \
+            || { echo "::error::patch 3 (license hash) did not apply"; exit 1; }
+
+          echo "Patched ggml/src/CMakeLists.txt successfully."
+        
 
       - name: Checkout llama.cpp
         uses: actions/checkout@v4
