@@ -60,6 +60,13 @@ jobs:
       - name: Install LLVM/Clang
         run: choco install llvm --no-progress -y
 
+      - name: Checkout llama.cpp
+        uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: master
+          submodules: recursive
+
       - name: Patch OpenMP fetch to track installed Clang version dynamically
         shell: bash
         run: |
@@ -92,14 +99,6 @@ jobs:
             || { echo "::error::patch 3 (license hash) did not apply"; exit 1; }
 
           echo "Patched ggml/src/CMakeLists.txt successfully."
-        
-
-      - name: Checkout llama.cpp
-        uses: actions/checkout@v4
-        with:
-          repository: ggml-org/llama.cpp
-          ref: master
-          submodules: recursive
 
       - name: Configure
         run: |
