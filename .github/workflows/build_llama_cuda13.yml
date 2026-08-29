@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 env:
-  CUDA_VERSION:     "13.2.0"
+  CUDA_VERSION:     "13.3.0"
   CUDA_ARCH:        "75"
   CMAKE_BUILD_TYPE: "Release"
   CMAKE_GENERATOR:  "Ninja"
@@ -16,7 +16,7 @@ jobs:
   # ===========================================================================
   build-allvariants-cuda:
     name: "llama.cpp · CPU AVX512_VNNI · CUDA sm_75"
-    runs-on: windows-2022
+    runs-on: windows-latest
 
     steps:
       - name: Install Cuda Toolkit 13.3
